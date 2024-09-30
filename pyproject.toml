@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "bert-impl"
+version = "0.1.0"
+description = ""
+authors = ["max <mr.applexz@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+transformers = "^4.45.1"
+torch = "^2.4.1"
+tokenizers = "^0.20.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

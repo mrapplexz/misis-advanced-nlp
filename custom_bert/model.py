@@ -5,6 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from custom_bert.config import BertConfig
+from custom_bert.preprocessing import build_square_attention_mask
 
 
 class BertEmbeddings(nn.Module):
@@ -48,12 +49,25 @@ class BertFeedForward(nn.Module):
         self.up = nn.Linear(config.hidden_size, config.intermediate_size)
         self.act = nn.ReLU()
         self.down = nn.Linear(config.intermediate_size, config.hidden_size)
+        self.dropout = nn.Dropout(config.dropout_prob_model)
 
     def forward(self, hidden_state: torch.Tensor):
         hidden_state = self.up(hidden_state)
         hidden_state = self.act(hidden_state)
         hidden_state = self.down(hidden_state)
+        hidden_state = self.dropout(hidden_state)
         return hidden_state
+
+
+class BertFeedForwardWithSkip(nn.Module):
+    def __init__(self, config: BertConfig):
+        super().__init__()
+        self.feed_forward = BertFeedForward(config)
+        self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layernorm_eps)
+
+    def forward(self, hidden_state: torch.Tensor):
+        new_hidden_state = self.feed_forward(hidden_state)
+        return self.layer_norm(hidden_state + new_hidden_state)
 
 
 class BertAttention(nn.Module):
@@ -66,6 +80,8 @@ class BertAttention(nn.Module):
         assert config.hidden_size % config.num_attention_heads == 0
         self.head_size = config.hidden_size // config.num_attention_heads
         self.denominator = math.sqrt(config.hidden_size)
+        self.dropout = nn.Dropout(config.dropout_prob_model)
+
 
     def split_heads(self, x: torch.Tensor) -> torch.Tensor:
         batch_size = x.shape[0]
@@ -109,9 +125,51 @@ class BertAttention(nn.Module):
 
         qk = torch.bmm(q, k.transpose(-1, -2))
         qk = qk / self.denominator
+        qk = qk + attention_mask
         attention_scores = F.softmax(qk, -1)
         vs = torch.bmm(attention_scores, v)
 
         vs_unsplit = self.unsplit_heads(vs, batch_size, seq_len)
         outputs = self.o_proj(vs_unsplit)
+        outputs = self.dropout(outputs)
         return outputs
+
+
+class BertAttentionWithSkip(nn.Module):
+    def __init__(self, config: BertConfig):
+        super().__init__()
+        self.attention = BertAttention(config)
+        self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layernorm_eps)
+
+    def forward(self, hidden_state: torch.Tensor, attention_mask: torch.Tensor):
+        new_hidden_state = self.attention(hidden_state, attention_mask)
+        return self.layer_norm(hidden_state + new_hidden_state)
+
+
+class BertLayer(nn.Module):
+    def __init__(self, config: BertConfig):
+        super().__init__()
+        self.feed_forward = BertFeedForwardWithSkip(config)
+        self.attention = BertAttentionWithSkip(config)
+
+    def forward(self, hidden_state: torch.Tensor, attention_mask: torch.Tensor):
+        hidden_state = self.attention(hidden_state, attention_mask)
+        hidden_state = self.feed_forward(hidden_state)
+        return hidden_state
+
+
+class BertModel(nn.Module):
+    def __init__(self, config: BertConfig):
+        super().__init__()
+        self.embedding = BertEmbeddings(config)
+        self.layers = nn.ModuleList([BertLayer(config) for _ in range(config.n_layers)])
+        self.num_heads = config.num_attention_heads
+
+    def forward(self, input_ids: torch.Tensor, segment_ids: torch.Tensor, attention_mask: torch.Tensor):
+        input_embeds = self.embedding(input_ids, segment_ids)
+        attention_mask = build_square_attention_mask(attention_mask, input_embeds.dtype, input_embeds.device,
+                                                     num_heads=self.num_heads)
+        hidden_state = input_embeds
+        for layer in self.layers:
+            hidden_state = layer(hidden_state, attention_mask)
+        return hidden_state

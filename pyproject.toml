@@ -11,6 +11,7 @@ python = ">=3.11,<3.12"
 transformers = "^4.45.1"
 torch = "^2.4.1"
 tokenizers = "^0.20.0"
+torchinfo = "^1.8.0"
 
 
 [build-system]

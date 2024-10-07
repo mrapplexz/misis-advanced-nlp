@@ -13,7 +13,10 @@ class BertConfig(PretrainedConfig):
             intermediate_size: int,
             padding_token_idx: int,
             dropout_prob_embeddings: float,
-            num_attention_heads: int
+            num_attention_heads: int,
+            layernorm_eps: float,
+            n_layers: int,
+            dropout_prob_model: float
     ):
         super().__init__()
 
@@ -25,3 +28,6 @@ class BertConfig(PretrainedConfig):
         self.padding_token_idx = padding_token_idx
         self.dropout_prob_embeddings = dropout_prob_embeddings
         self.num_attention_heads = num_attention_heads
+        self.layernorm_eps = layernorm_eps
+        self.n_layers = n_layers
+        self.dropout_prob_model = dropout_prob_model

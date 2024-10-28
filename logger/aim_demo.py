@@ -22,9 +22,9 @@ if __name__ == '__main__':
         print(f'lol {iteration}')
         if iteration % 100 == 0:
             if iteration % 200:
-                run.track(Image('/home/me/downloads/Cat.jpg', caption='my cat'), 'generated_image', step=iteration)
+                run.track(Image('images/Cat.jpg', caption='my cat'), 'generated_image', step=iteration)
             else:
-                run.track(Image('/home/me/downloads/images (3).jpeg', caption='my cat'), 'generated_image', step=iteration)
+                run.track(Image('images/images (3).jpeg', caption='my cat'), 'generated_image', step=iteration)
 
     df = px.data.gapminder().query("year == 2007")
     fig = px.treemap(df, path=[px.Constant('world'), 'continent', 'country'], values='pop',

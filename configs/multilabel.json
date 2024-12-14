@@ -1,0 +1,16 @@
+{
+  "data_path": "data/train.csv",
+  "random_state": 42,
+  "eval_split_fraction": 0.01,
+  "gradient_accumulation_steps": 4,
+  "lr": 0.00005,
+  "weight_decay": 0.01,
+  "warmup_proportion": 0.1,
+  "batch_size": 4,
+  "num_workers": 4,
+  "epochs": 2,
+  "experiment_name": "test",
+  "save_path": "saves/multilabel",
+  "save_steps": 100,
+  "eval_steps": 100
+}

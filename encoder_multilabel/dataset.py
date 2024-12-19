@@ -1,13 +1,10 @@
 from pathlib import Path
 
-import datasets
+import torch.nn.functional as F
 import torch.utils.data
 from datasets import load_dataset, Features, Value, Dataset
-from pandas import DataFrame
 from torch import Tensor
-from torch.utils.data.dataset import T_co
 from transformers import AutoTokenizer
-import torch.nn.functional as F
 
 from encoder_multilabel.const import BASE_MODEL_NAME, LABELS
 
